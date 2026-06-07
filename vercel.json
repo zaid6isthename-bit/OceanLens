@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "package.json", "use": "@vercel/next" }
+  ],
+  "env": {
+    "NEXTAUTH_URL": "https://your-deployment-url.vercel.app"
+  }
+}

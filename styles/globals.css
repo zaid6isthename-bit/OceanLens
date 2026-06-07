@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #__next {
+  height: 100%;
+}
+
+body {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+
+/* BL pill animation: center -> top-right pinned */
+.bl-pill {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(1);
+  background: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(2,6,23,0.08);
+  border: 1px solid rgba(15,23,42,0.06);
+  font-weight: 600;
+  z-index: 60;
+}
+
+.bl-pill.animate-pin {
+  animation: pin-to-top-right 750ms cubic-bezier(.2,.9,.2,1) forwards;
+}
+
+.bl-pill.pinned {
+  left: auto;
+  right: 16px;
+  top: 16px;
+  transform: none;
+}
+
+@keyframes pin-to-top-right {
+  0% {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(18vw, -40vh) scale(0.9);
+    opacity: 1;
+  }
+  100% {
+    left: auto;
+    right: 16px;
+    top: 16px;
+    transform: none scale(0.88);
+    opacity: 1;
+  }
+}
+
+/* glass panels */
+.glass-panel {
+  background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.6));
+  border: 1px solid rgba(255,255,255,0.3);
+}
