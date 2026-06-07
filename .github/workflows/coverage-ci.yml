@@ -1,0 +1,35 @@
+name: CI - Tests & Coverage
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ '*' ]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install
+        run: npm ci
+      - name: Run tests with coverage
+        run: npx jest --coverage --colors
+        env:
+          NODE_ENV: test
+      - name: Generate reports
+        run: node scripts/generate_reports.js
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+      - name: Upload human readable reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: textual-reports
+          path: reports/
