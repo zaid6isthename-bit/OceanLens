@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '../auth/[...nextauth]'
 import { prisma } from '../../../lib/prisma'
 import { decrypt } from '../../../lib/crypto'
+import { getEncryptionKey } from '../../../lib/encryption'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
@@ -18,9 +19,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const cred = await prisma.apiCredential.findFirst({ where: { userId: user.id, provider: { contains: 'MarineTraffic' } } })
   if (!cred) return res.status(404).json({ error: 'MarineTraffic credential not configured' })
 
-  const secret = process.env.NEXTAUTH_SECRET || 'dev-secret'
   let apiKey = String(cred.apiKey || '')
-  try { apiKey = decrypt(apiKey, secret) } catch (e) { /* assume plain */ }
+  try { apiKey = decrypt(apiKey, getEncryptionKey()) } catch (e) { /* assume plain */ }
 
   const endpoint = cred.endpoint || ''
   if (!endpoint) return res.status(400).json({ error: 'Credential has no endpoint configured' })

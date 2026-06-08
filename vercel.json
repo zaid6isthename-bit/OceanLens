@@ -5,5 +5,8 @@
   ],
   "env": {
     "NEXTAUTH_URL": "https://your-deployment-url.vercel.app"
-  }
+  },
+  "crons": [
+    { "path": "/api/cron/sync", "schedule": "*/15 * * * *" }
+  ]
 }

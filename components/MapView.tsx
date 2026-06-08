@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import mapboxgl from 'mapbox-gl'
 
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || process.env.MAPBOX_TOKEN || ''
+mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''
 
 export default function MapView({ bl, data }: { bl: string; data: any }) {
   const ref = useRef<HTMLDivElement | null>(null)

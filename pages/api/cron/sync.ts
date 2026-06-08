@@ -1,15 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '../../../lib/prisma'
 import redis from '../../../lib/redis'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '../auth/[...nextauth]'
 
 // Trigger a manual sync for a specific BL or for all recent searches.
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const session = await getServerSession(req, res, authOptions)
-  if (!session?.user?.email) return res.status(401).json({ error: 'Not authenticated' })
-
   if (req.method !== 'POST') return res.status(405).end()
+
+  const auth = req.headers.authorization
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) return res.status(401).json({ error: 'Unauthorized' })
+
   const { bl } = req.body
 
   const searches = bl ? await prisma.search.findMany({ where: { blNumber: bl } }) : await prisma.search.findMany({ where: {}, take: 100 })

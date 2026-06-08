@@ -4,12 +4,18 @@ import redis from '../../lib/redis'
 import { getServerSession } from 'next-auth'
 import { authOptions } from './auth/[...nextauth]'
 import { fetchVesselCoordinatesByIMO } from '../../lib/providers'
-import { fetchFromForwarders } from '../../lib/providers'
+import { fetchFromForwarders } from '../../lib/providers/index'
+import { getVesselInfoByIMO } from '../../lib/vesselProviders'
+import { storeVesselPosition, getCachedVessel } from '../../lib/vesselService'
 import { storeShipment } from '../../lib/supabase'
 import { NormalizedShipment } from '../../lib/provider'
+import { rateLimit } from '../../lib/rateLimit'
 
 // This endpoint orchestrates BL lookup across forwarder APIs and vessel trackers.
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const allowed = await rateLimit('search', 60, 60000)
+  if (!allowed) return res.status(429).json({ error: 'Too many requests' })
+
   const bl = String(req.query.bl || req.body.bl || '')
   if (!bl) return res.status(400).json({ error: 'Missing bl parameter' })
 
@@ -57,10 +63,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const imo = normalized.vessel?.imo
     if (imo) {
-      const coords = await fetchVesselCoordinatesByIMO(String(imo), userId)
-      if (coords) {
-        normalized.vessel = normalized.vessel || {}
-        normalized.vessel.coordinates = coords
+      // try cached vessel
+      const cached = await getCachedVessel(String(imo))
+      if (cached) {
+        normalized.vessel = { ...normalized.vessel, coordinates: { lat: cached.coordinates.lat, lng: cached.coordinates.lng } }
+      } else {
+        const info = await getVesselInfoByIMO(String(imo), userId)
+        if (info) {
+          normalized.vessel = { ...normalized.vessel, ...info }
+          // persist position + cache
+          try { await storeVesselPosition(info) } catch (e) {}
+        } else {
+          const coords = await fetchVesselCoordinatesByIMO(String(imo), userId)
+          if (coords) {
+            if (!normalized.vessel) normalized.vessel = {}
+            normalized.vessel.coordinates = coords
+          }
+        }
       }
     }
   } catch (err) {

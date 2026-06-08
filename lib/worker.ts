@@ -20,7 +20,7 @@ const worker = new Worker(
 
     for (const s of searches) {
       try {
-        const result = s.result || {}
+        const result: any = s.result || {}
         const imo = result?.vessel?.imo
         if (!imo) continue
         const coords = await fetchVesselCoordinatesByIMO(imo, s.userId || undefined)

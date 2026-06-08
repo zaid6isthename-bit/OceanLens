@@ -145,3 +145,10 @@ export function markProviderSuccess(providerName: string, payload: any) {
     redis.set(key, JSON.stringify(payload), 'EX', 60 * 60) // 1 hour
   } catch (e) {}
 }
+
+// helper for tests to inspect circuit
+export function isCircuitOpen(name: string) {
+  const s: any = (states as any)[name]
+  if (!s) return false
+  return !!(s.circuitOpenUntil && Date.now() < s.circuitOpenUntil)
+}

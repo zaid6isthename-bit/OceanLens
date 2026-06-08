@@ -79,3 +79,33 @@ model VerificationToken {
   expires    DateTime
   @@unique([identifier, token])
 }
+
+model VesselPosition {
+  id           String   @id @default(cuid())
+  imo          String
+  name         String?
+  latitude     Float
+  longitude    Float
+  speed        Float?
+  heading      Float?
+  destination  String?
+  eta          DateTime?
+  provider     String?
+  lastUpdated  DateTime @default(now())
+}
+
+model VesselTrackingCache {
+  id          String   @id @default(cuid())
+  imo         String
+  payload     Json
+  ttlSeconds  Int      @default(300)
+  createdAt   DateTime @default(now())
+}
+
+model VesselProviderMetric {
+  id           String   @id @default(cuid())
+  provider     String
+  event        String
+  details      Json?
+  createdAt    DateTime @default(now())
+}

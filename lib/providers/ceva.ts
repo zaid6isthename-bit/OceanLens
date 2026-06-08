@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/prisma'
 import { decrypt } from '../../lib/crypto'
 import { ForwarderProvider, NormalizedShipment } from '../provider'
+import { getEncryptionKey } from '../../lib/encryption'
 
 function tryParseShipment(json: any, bl: string): NormalizedShipment | null {
   if (!json) return null
@@ -36,9 +37,8 @@ const CEVAProvider: ForwarderProvider = {
     const cred = userId ? await prisma.apiCredential.findFirst({ where: { userId, provider: { contains: 'CEVA' } } }) : null
     if (!cred) return null
 
-    const secret = process.env.NEXTAUTH_SECRET || 'dev-secret'
     let apiKey = String(cred.apiKey || '')
-    try { apiKey = decrypt(apiKey, secret) } catch (e) {}
+    try { apiKey = decrypt(apiKey, getEncryptionKey()) } catch (e) {}
     const endpoint = cred.endpoint || ''
     if (!endpoint) return null
 

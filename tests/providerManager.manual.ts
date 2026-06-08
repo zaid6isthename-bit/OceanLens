@@ -1,6 +1,6 @@
-// Basic test scaffolding for providerManager behaviors.
-// These are simple node-run test stubs; run with `node tests/providerManager.test.ts` or integrate into Jest.
-import { callProvider, markProviderSuccess } from '../lib/providerManager'
+// Manual test runner for providerManager behaviors.
+// Run with: node tests/providerManager.test.ts
+import { callProvider } from '../lib/providerManager'
 
 async function testTimeout() {
   console.log('test: timeout handling')

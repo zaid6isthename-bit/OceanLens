@@ -1,13 +1,22 @@
 import { prisma } from './prisma'
 import { decrypt } from './crypto'
+import { getEncryptionKey } from './encryption'
 import { fetchMarineTrafficPosition } from './marinetraffic'
+import { getVesselInfoByIMO } from './vesselProviders'
 
 type Coord = { lat: number; lng: number } | null
 
 export async function fetchVesselCoordinatesByIMO(imo: string, userId?: string): Promise<Coord> {
   if (!imo) return null
+  // Prefer specialized vessel providers (MarineTraffic, VesselFinder)
+  try {
+    const info = await getVesselInfoByIMO(imo, userId)
+    if (info && info.coordinates) return { lat: info.coordinates.lat, lng: info.coordinates.lng }
+  } catch (e) {}
+
+  // Fallback to previous generic behavior: try any configured endpoints
   const creds = userId ? await prisma.apiCredential.findMany({ where: { userId } }) : []
-  const candidates = creds.filter((c) => /MarineTraffic|VesselFinder|FleetMon|ShipAtlas/i.test(c.provider))
+  const candidates = creds.filter((c) => /MarineTraffic|VesselFinder|FleetMon|ShipAtlas/i.test(c.provider) || true)
 
   for (const c of candidates) {
     try {
@@ -15,41 +24,20 @@ export async function fetchVesselCoordinatesByIMO(imo: string, userId?: string):
       if (!endpoint) continue
 
       // decrypt stored keys if encrypted
-      const secret = process.env.NEXTAUTH_SECRET || 'dev-secret'
       let apiKey = String(c.apiKey || '')
-      try {
-        apiKey = decrypt(apiKey, secret)
-      } catch (e) {
-        // if decrypt fails, assume stored value is plain
-      }
+      try { apiKey = decrypt(apiKey, getEncryptionKey()) } catch (e) {}
 
       const url = new URL(endpoint)
-      // common param names
       if (!url.searchParams.has('imo')) url.searchParams.set('imo', imo)
-      if (apiKey && !url.searchParams.has('apikey') && !url.searchParams.has('key') && !url.searchParams.has('token')) {
-        url.searchParams.set('apikey', apiKey)
-      }
-
-      // If provider is MarineTraffic, use specialized parser
-      if (/MarineTraffic/i.test(c.provider)) {
-        const mt = await fetchMarineTrafficPosition(endpoint, apiKey, imo)
-        if (mt) return { lat: mt.lat, lng: mt.lon }
-        continue
-      }
+      if (apiKey && !url.searchParams.has('apikey') && !url.searchParams.has('key') && !url.searchParams.has('token')) url.searchParams.set('apikey', apiKey)
 
       const res = await fetch(url.toString(), { method: 'GET' })
       if (!res.ok) continue
       const json = await res.json().catch(() => null)
       if (!json) continue
 
-      // common shapes
       if (json.lat && json.lon) return { lat: Number(json.lat), lng: Number(json.lon) }
       if (json.latitude && json.longitude) return { lat: Number(json.latitude), lng: Number(json.longitude) }
-      if (json.data && Array.isArray(json.data) && json.data[0]) {
-        const first = json.data[0]
-        if (first.latitude && first.longitude) return { lat: Number(first.latitude), lng: Number(first.longitude) }
-        if (first.lat && first.lon) return { lat: Number(first.lat), lng: Number(first.lon) }
-      }
 
       const maybe = findLatLngInObject(json)
       if (maybe) return maybe

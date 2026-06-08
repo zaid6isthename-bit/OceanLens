@@ -1,7 +1,7 @@
 import Redis from 'ioredis'
 
 const url = process.env.REDIS_URL
-let client: Redis.Redis
+let client: Redis
 
 if (!url) {
   client = new Redis()

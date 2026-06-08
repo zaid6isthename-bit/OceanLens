@@ -1,15 +1,21 @@
 import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import ShipmentPanel from '../../components/ShipmentPanel'
 import Timeline from '../../components/Timeline'
 
 const MapView = dynamic(() => import('../../components/MapView'), { ssr: false })
 
 export default function Tracking() {
+  const { status } = useSession()
   const router = useRouter()
   const { bl } = router.query
   const [data, setData] = useState<any>(null)
+
+  useEffect(() => {
+    if (status === 'unauthenticated') router.push('/login')
+  }, [status, router])
 
   useEffect(() => {
     if (!bl) return
@@ -27,6 +33,8 @@ export default function Tracking() {
       clearInterval(interval)
     }
   }, [bl])
+
+  if (status === 'loading' || status === 'unauthenticated') return null
 
   return (
     <div className="h-screen w-screen relative">

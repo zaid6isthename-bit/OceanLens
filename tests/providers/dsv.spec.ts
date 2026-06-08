@@ -1,4 +1,6 @@
-import nock from 'nock'
+// Mock fetch globally since nock cannot intercept Node 18+ fetch (undici)
+const mockFetch = jest.fn()
+global.fetch = mockFetch
 
 jest.mock('../../lib/prisma', () => ({
   prisma: {
@@ -11,31 +13,35 @@ jest.mock('../../lib/prisma', () => ({
 const { default: DSVProvider } = require('../../lib/providers/dsv')
 
 describe('DSV provider', () => {
-  afterEach(() => nock.cleanAll())
+  beforeEach(() => {
+    mockFetch.mockReset()
+  })
 
   test('parses successful DSV response', async () => {
-    const bl = 'DSV123'
-    nock('https://dsv.test').get('/api/track').query(true).reply(200, {
-      vessel_name: 'DSV VESSEL',
-      imo_number: '1112223',
-      voyage_no: 'D1',
-      containers: ['X1'],
-      pol: 'AAA',
-      pod: 'BBB',
-      eta: '2026-07-05T00:00:00Z',
-      events: [{ time: '2026-06-02', event: 'Loaded' }]
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        vessel_name: 'DSV VESSEL',
+        imo_number: '1112223',
+        voyage_no: 'D1',
+        containers: ['X1'],
+        pol: 'AAA',
+        pod: 'BBB',
+        eta: '2026-07-05T00:00:00Z',
+        events: [{ time: '2026-06-02', event: 'Loaded' }]
+      }),
+      text: async () => ''
     })
 
-    const res = await DSVProvider.fetchByBL(bl, 'user2')
+    const res = await DSVProvider.fetchByBL('DSV123', 'user2')
     expect(res).not.toBeNull()
-    expect(res.blNumber).toBe(bl)
+    expect(res.blNumber).toBe('DSV123')
     expect(res.vessel?.name).toBe('DSV VESSEL')
     expect(res.vessel?.imo).toBe('1112223')
   })
 
   test('invalid BL yields null', async () => {
-    const bl = ''
-    const res = await DSVProvider.fetchByBL(bl, 'user2')
+    const res = await DSVProvider.fetchByBL('', 'user2')
     expect(res).toBeNull()
   })
 })

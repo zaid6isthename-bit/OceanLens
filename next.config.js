@@ -2,8 +2,19 @@
 const nextConfig = {
   reactStrictMode: true,
   env: {
-    MAPBOX_TOKEN: process.env.MAPBOX_TOKEN || '',
-  }
+    NEXT_PUBLIC_MAPBOX_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '',
+  },
+  headers: async () => [
+    {
+      source: '/(.*)',
+      headers: [
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'X-XSS-Protection', value: '1; mode=block' },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      ],
+    },
+  ],
 }
 
 module.exports = nextConfig

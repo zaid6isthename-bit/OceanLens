@@ -1,17 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/router'
 
-const PROVIDERS = ['Forwarders', 'CEVA', 'DSV', 'DHL', 'Kuehne + Nagel']
+const PROVIDERS = ['Forwarders', 'CEVA', 'DSV', 'DHL', 'Kuehne + Nagel', 'DB Schenker', 'MarineTraffic', 'VesselFinder']
 
 export default function Wizard() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [list, setList] = useState<any[]>([])
   const [form, setForm] = useState({ provider: '', apiKey: '', secretKey: '', endpoint: '' })
   const [testing, setTesting] = useState(false)
 
   useEffect(() => {
+    if (status === 'unauthenticated') router.push('/login')
+  }, [status, router])
+
+  useEffect(() => {
+    if (status !== 'authenticated') return
     fetch('/api/providers').then((r) => r.json()).then(setList).catch(() => setList([]))
-  }, [])
+  }, [status])
 
   async function add() {
     await fetch('/api/providers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
@@ -27,6 +34,8 @@ export default function Wizard() {
     alert(JSON.stringify(j))
     setTesting(false)
   }
+
+  if (status === 'loading' || status === 'unauthenticated') return null
 
   return (
     <div className="min-h-screen p-8 bg-white">
